@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Audit Finding 조치 현황 대시보드</title>
+<style>
+:root{
+  --bg:#f4f6f9;--card:#fff;--ink:#1c2430;--mute:#5d6878;--line:#e1e6ee;
+  --ok:#2f7d4f;--ok-bg:#e6f3ec;--norm:#3b6ea8;--norm-bg:#e8f0fa;
+  --warn:#b7791f;--warn-bg:#fdf3df;--bad:#c0392b;--bad-bg:#fbe9e7;
+  --done:#6b7686;--done-bg:#eceff3;--accent:#1f3a5f;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#12171e;--card:#1b222c;--ink:#e6ebf2;--mute:#9aa6b6;--line:#2c3644;
+  --ok:#5cc48a;--ok-bg:#1c3326;--norm:#7fb0e6;--norm-bg:#1d2c40;
+  --warn:#e5b04f;--warn-bg:#3a2f17;--bad:#ef7a6d;--bad-bg:#40201d;
+  --done:#9aa6b6;--done-bg:#262e3a;--accent:#8fb4e8;}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 "Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+h1{font-size:22px;margin:0}
+.sub{color:var(--mute);font-size:12.5px}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+h2{font-size:15px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+h2 .n{background:var(--accent);color:var(--card);border-radius:50%;width:22px;height:22px;display:inline-grid;place-items:center;font-size:12px}
+.sum p{margin:6px 0;font-size:14.5px}
+.sum b{font-weight:700}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600;white-space:nowrap}
+.t-지연,.t-높음{background:var(--bad-bg);color:var(--bad)}
+.t-주의,.t-중간{background:var(--warn-bg);color:var(--warn)}
+.t-정상,.t-낮음{background:var(--norm-bg);color:var(--norm)}
+.t-완료,.t-종결{background:var(--done-bg);color:var(--done)}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.card{border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.card .lb{font-size:12.5px;color:var(--mute);display:flex;justify-content:space-between}
+.card .big{font-size:30px;font-weight:700;line-height:1.2;margin:4px 0}
+.card .big small{font-size:14px;font-weight:600;color:var(--mute)}
+.card .row{font-size:12.5px;color:var(--mute);display:flex;justify-content:space-between;border-top:1px dashed var(--line);padding-top:5px;margin-top:5px}
+.card .row b{color:var(--ink)}
+.bar{height:6px;background:var(--done-bg);border-radius:3px;position:relative;margin-top:6px}
+.bar i{display:block;height:100%;border-radius:3px;background:var(--accent)}
+.bar u{position:absolute;top:-3px;width:2px;height:12px;background:var(--bad)}
+.charts{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--mute);margin-bottom:6px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;background:var(--c);vertical-align:-1px}
+svg text{fill:var(--mute);font-size:10px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+button,select,input[type=text],input[type=date]{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:4px 10px}
+button{cursor:pointer}
+button.on{background:var(--accent);color:var(--card);border-color:var(--accent)}
+.tw{overflow:auto;max-height:620px;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{position:sticky;top:0;background:var(--done-bg);z-index:1;white-space:nowrap}
+td.num{text-align:right;white-space:nowrap}
+.dots{letter-spacing:2px;white-space:nowrap}
+.dots b{color:var(--accent)}
+.dots span{color:var(--line)}
+.reason input{width:100%;min-width:150px;padding:3px 6px;font-size:12px;margin-top:3px}
+.auto{color:var(--mute)}
+.note{font-size:12px;color:var(--mute);margin-top:8px}
+.rec li{margin:5px 0}
+.own td{vertical-align:middle}
+.sig{min-width:130px}
+.foot{display:flex;gap:30px;margin-top:18px;flex-wrap:wrap}
+.foot div{flex:1;min-width:200px;border-top:1px solid var(--ink);padding-top:4px;font-size:12px;color:var(--mute)}
+@media (max-width:900px){.cards{grid-template-columns:1fr 1fr}.charts{grid-template-columns:1fr}}
+@media (max-width:520px){.cards{grid-template-columns:1fr}}
+@media print{body{background:#fff}.filters,#pr{display:none}.tw{max-height:none;overflow:visible}section{break-inside:avoid-page}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1>Audit Finding 조치 현황 대시보드</h1>
+  <div class="sub" id="hd"></div></div>
+  <button id="pr" onclick="window.print()">인쇄 / PDF 저장</button>
+</header>
+
+<section class="sum"><h2><span class="n">1</span>요약</h2><div id="summary"></div></section>
+
+<section><h2><span class="n">2</span>핵심지표</h2><div class="cards" id="cards"></div>
+<div class="note">달성율 = 항목별 진행률(%) 평균 / 계획 대비 = 실제 진행률 합 ÷ 계획 진행률 합. 계획 진행률은 (기준일−심사일)÷(조치기한−심사일)로 산출(0~100%, 기한이 지났으면 100%). 붉은 눈금 = 계획 위치.</div></section>
+
+<section><h2><span class="n">3</span>차트</h2>
+<div class="charts">
+  <div><b style="font-size:13px">항목별 진행율 (F-001 ~ F-050)</b>
+    <div class="legend" id="lg1"></div><div id="ch1"></div></div>
+  <div><b style="font-size:13px">Risk 등급 분포</b>
+    <div class="legend" id="lg2"></div><div id="ch2"></div>
+    <div class="note" id="riskdef"></div></div>
+</div></section>
+
+<section><h2><span class="n">4</span>상세표 (50개 항목)</h2>
+<div class="filters" id="flt"></div>
+<div class="tw"><table><thead><tr>
+<th>ID</th><th>구분</th><th>Finding 내용</th><th>담당자</th><th>조치기한</th><th>D-n</th><th>상태</th><th>진행률</th><th>현재 단계/5</th><th>Risk</th><th>지연 사유 (자동 진단 + 확인 입력)</th>
+</tr></thead><tbody id="tb"></tbody></table></div>
+<div class="note">현재 단계 = 진행률÷20 (내림): 0 미착수 · 1 계획수립 · 2 원인분석 · 3 조치이행 · 4 검증(검증대기 포함) · 5 완료. 원본 엑셀에 ‘지연 사유’ 항목이 없어 데이터(기한 초과일·진행률)로 자동 진단했으며, 실제 사유는 담당자가 입력란에 기재합니다(브라우저에 저장).</div></section>
+
+<section><h2><span class="n">5</span>권고 조치 및 담당자 확인란</h2>
+<ul class="rec" id="rec"></ul>
+<div class="tw" style="max-height:none;margin-top:12px"><table class="own"><thead><tr>
+<th>담당자</th><th>담당부서</th><th>지연</th><th>주의</th><th>조치 대상 항목</th><th>확인</th><th>확인일</th><th>의견/서명</th></tr></thead><tbody id="ob"></tbody></table></div>
+<div class="foot"><div>작성자 (품질관리 책임자)</div><div>검토자</div><div>승인자</div></div>
+</section>
+</div>
+
+<script>
+const D=[{"id": "F-001", "cat": "Major", "iso": "7.5", "area": "문서화된 정보", "text": "시정조치 미이행 건의 근본원인 분석 누락", "owner": "김민수", "dept": "품질관리팀", "audit": "2026-10-12", "due": "2026-10-31", "state": "진행중", "prog": 40, "done": "", "left": -6, "status": "지연", "planned": 100, "stage": 2, "reason": "기한 6일 초과 · 진행률 40% (단계 2/5), 잔여 60%p 미달", "risk": "높음", "predue": false}, {"id": "F-002", "cat": "Major", "iso": "8.3", "area": "설계·개발", "text": "교정 만료 계측기를 현장에서 사용", "owner": "한소라", "dept": "설비/보전팀", "audit": "2026-10-12", "due": "2026-11-09", "state": "진행중", "prog": 20, "done": "", "left": 3, "status": "주의", "planned": 89, "stage": 1, "reason": "", "risk": "중간", "predue": false}, {"id": "F-003", "cat": "Major", "iso": "5.1", "area": "리더십과 의지", "text": "공급자 평가 미실시 상태로 신규 협력사 발주", "owner": "박지훈", "dept": "구매팀", "audit": "2026-10-12", "due": "2026-11-16", "state": "진행중", "prog": 20, "done": "", "left": 10, "status": "주의", "planned": 71, "stage": 1, "reason": "", "risk": "중간", "predue": false}, {"id": "F-004", "cat": "Major", "iso": "7.5", "area": "문서화된 정보", "text": "부적합품 격리·식별 미흡", "owner": "오태민", "dept": "물류/창고팀", "audit": "2026-10-12", "due": "2026-12-01", "state": "미착수", "prog": 0, "done": "", "left": 25, "status": "정상", "planned": 50, "stage": 0, "reason": "", "risk": "정상", "predue": false}, {"id": "F-005", "cat": "Major", "iso": "8.5", "area": "생산 및 서비스 제공", "text": "경영검토 필수 입력사항 누락", "owner": "이서연", "dept": "생산팀", "audit": "2026-10-12", "due": "2026-10-17", "state": "완료", "prog": 100, "done": "2026-10-17", "left": null, "status": "완료", "planned": 100, "stage": 5, "reason": "", "risk": "종결", "predue": false}, {"id": "F-006", "cat": "Minor", "iso": "7.1.5", "area": "모니터링·측정 자원(교정)", "text": "문서 개정 이력 불일치", "owner": "오태민", "dept": "물류/창고팀", "audit": "2026-10-12", "due": "2026-10-25", "state": "진행중", "prog": 20, "done": "", "left": -12, "status": "지연", "planned": 100, "stage": 1, "reason": "기한 12일 초과 · 진행률 20% (단계 1/5), 잔여 80%p 미달", "risk": "중간", "predue": false}, {"id": "F-007", "cat": "Minor", "iso": "10.2", "area": "부적합 및 시정조치", "text": "교육 훈련 효과성 평가 기록 미비", "owner": "윤지아", "dept": "영업/CS팀", "audit": "2026-10-12", "due": "2026-09-10", "state": "완료", "prog": 100, "done": "2026-09-09", "left": null, "status": "완료", "planned": 100, "stage": 5, "reason": "", "risk": "종결", "predue": true}, {"id": "F-008", "cat": "Minor", "iso": "8.7", "area": "부적합 출력물 관리", "text": "내부심사 부서별 계획 대비 누락", "owner": "김민수", "dept": "품질관리팀", "audit": "2026-10-12", "due": "2026-11-21", "state": "진행중", "prog": 80, "done": "", "left": 15, "status": "정상", "planned": 62, "stage": 4, "reason": "", "risk": "정상", "predue": false}, {"id": "F-009", "cat": "Minor", "iso": "8.5", "area": "생산 및 서비스 제공", "text": "고객 불만 처리 기한 초과", "owner": "이서연", "dept": "생산팀", "audit": "2026-10-12", "due": "2026-10-19", "state": "진행중", "prog": 40, "done": "", "left": -18, "status": "지연", "planned": 100, "stage": 2, "reason": "기한 18일 초과 · 진행률 40% (단계 2/5), 잔여 60%p 미달", "risk": "중간", "predue": false}, {"id": "F-010", "cat": "Minor", "iso": "8.7", "area": "부적합 출력물 관리", "text": "작업 표준서 최신본 미비치", "owner": "박지훈", "dept": "구매팀", "audit": "2026-10-12", "due": "2026-11-08", "state": "진행중", "prog": 60, "done": "", "left": 2, "status": "주의", "planned": 93, "stage": 3, "reason": "", "risk": "낮음", "predue": false}, {"id": "F-011", "cat": "Minor", "iso": "6.1", "area": "리스크와 기회 대응", "text": "설계 변경 검증 기록 누락", "owner": "최유진", "dept": "설계/R&D팀", "audit": "2026-10-12", "due": "2026-10-20", "state": "완료", "prog": 100, "done": "2026-10-16", "left": null, "status": "완료", "planned": 100, "stage": 5, "reason": "", "risk": "종결", "predue": false}, {"id": "F-012", "cat": "Minor", "iso": "7.5", "area": "문서화된 정보", "text": "입고검사 기록 서명 누락", "owner": "정현우", "dept": "인사/교육팀", "audit": "2026-10-12", "due": "2026-09-19", "state": "완료", "prog": 100, "done": "2026-09-15", "left": null, "status": "완료", "planned": 100, "stage": 5, "reason": "", "risk": "종결", "predue": true}, {"id": "F-013", "cat": "Minor", "iso": "8.7", "area": "부적합 출력물 관리", "text": "장비 예방보전 일정 미준수", "owner": "한소라", "dept": "설비/보전팀", "audit": "2026-10-12", "due": "2027-01-25", "state": "미착수", "prog": 0, "done": "", "left": 80, "status": "정상", "planned": 24, "stage": 0, "reason": "", "risk": "정상", "predue": false}, {"id": "F-014", "cat": "Minor", "iso": "8.3", "area": "설계·개발", "text": "목표 달성 현황 모니터링 미흡", "owner": "오태민", "dept": "물류/창고팀", "audit": "2026-10-12", "due": "2026-10-11", "state": "완료", "prog": 100, "done": "2026-10-08", "left": null, "status": "완료", "planned": 100, "stage": 5, "reason": "", "risk": "종결", "predue": true}, {"id": "F-015", "cat": "Minor", "iso": "7.5", "area": "문서화된 정보", "text": "리스크 등록부 업데이트 지연", "owner": "윤지아", "dept": "영업/CS팀", "audit": "2026-10-12", "due": "2026-10-06", "state": "완료", "prog": 100, "done": "2026-10-05", "left": null, "status": "완료", "planned": 100, "stage": 5, "reason": "", "risk": "종결", "predue": true}, {"id": "F-016", "cat": "Minor", "iso": "8.7", "area": "부적합 출력물 관리", "text": "외주 공정 관리 기준 미명시", "owner": "김민수", "dept": "품질관리팀", "audit": "2026-10-12", "due": "2026-12-15", "state": "미착수", "prog": 0, "done": "", "left": 39, "status": "정상", "planned": 39, "stage": 0, "reason": "", "risk": "정상", "predue": false}, {"id": "F-017", "cat": "Minor", "iso": "9.2", "area": "내부심사", "text": "출하 전 최종검사 체크리스트 누락", "owner": "이서연", "dept": "생산팀", "audit": "2026-10-12", "due": "2026-09-28", "state": "완료", "prog": 100, "done": "2026-09-26", "left": null, "status": "완료", "planned": 100, "stage": 5, "reason": "", "risk": "종결", "predue": true}, {"id": "F-018", "cat": "Minor", "iso": "5.1", "area": "리더십과 의지", "text": "측정 시스템 분석(MSA) 미실시", "owner": "박지훈", "dept": "구매팀", "audit": "2026-10-12", "due": "2026-09-11", "state": "완료", "prog": 100, "done": "2026-09-10", "left": null, "status": "완료", "planned": 100, "stage": 5, "reason": "", "risk": "종결", "predue": true}, {"id": "F-019", "cat": "Minor", "iso": "8.3", "area": "설계·개발", "text": "보관 환경 조건 기록 미흡", "owner": "최유진", "dept": "설계/R&D팀", "audit": "2026-10-12", "due": "2026-12-03", "state": "진행중", "prog": 20, "done": "", "left": 27, "status": "정상", "planned": 48, "stage": 1, "reason": "", "risk": "정상", "predue": false}, {"id": "F-020", "cat": "Minor", "iso": "8.7", "area": "부적합 출력물 관리", "text": "고객 재산 식별·관리 미흡", "owner": "정현우", "dept": "인사/교육팀", "audit": "2026-10-12", "due": "2026-11-23", "state": "진행중", "prog": 60, "done": "", "left": 17, "status": "정상", "planned": 60, "stage": 3, "reason": "", "risk": "정상", "predue": false}, {"id": "F-021", "cat": "Minor", "iso": "8.7", "area": "부적합 출력물 관리", "text": "레코드 보존기간 미준수", "owner": "한소라", "dept": "설비/보전팀", "audit": "2026-10-12", "due": "2026-11-11", "state": "미착수", "prog": 0, "done": "", "left": 5, "status": "주의", "planned": 83, "stage": 0, "reason": "", "risk": "낮음", "predue": false}, {"id": "F-022", "cat": "Minor", "iso": "8.4", "area": "외부 공급자 관리", "text": "비상 대응 훈련 기록 부재", "owner": "오태민", "dept": "물류/창고팀", "audit": "2026-10-12", "due": "2026-10-14", "state": "미착수", "prog": 0, "done": "", "left": -23, "status": "지연", "planned": 100, "stage": 0, "reason": "기한 23일 초과 · 미착수(착수 지연)", "risk": "높음", "predue": false}, {"id": "F-023", "cat": "Minor", "iso": "9.1", "area": "모니터링·측정·분석", "text": "공급자 재평가 주기 초과", "owner": "윤지아", "dept": "영업/CS팀", "audit": "2026-10-12", "due": "2026-11-03", "state": "미착수", "prog": 0, "done": "", "left": -3, "status": "지연", "planned": 100, "stage": 0, "reason": "기한 3일 초과 · 미착수(착수 지연)", "risk": "높음", "predue": false}, {"id": "F-024", "cat": "Minor", "iso": "4.4", "area": "품질경영시스템 프로세스", "text": "시정조치 효과성 확인 지연", "owner": "김민수", "dept": "품질관리팀", "audit": "2026-10-12", "due": "2026-11-12", "state": "미착수", "prog": 0, "done": "", "left": 6, "status": "주의", "planned": 81, "stage": 0, "reason": "", "risk": "낮음", "predue": false}, {"id": "F-025", "cat": "Minor", "iso": "4.4", "area": "품질경영시스템 프로세스", "text": "신규 입사자 역량 평가 누락", "owner": "이서연", "dept": "생산팀", "audit": "2026-10-12", "due": "2026-11-07", "state": "미착수", "prog": 0, "done": "", "left": 1, "status": "주의", "planned": 96, "stage": 0, "reason": "", "risk": "낮음", "predue": false}, {"id": "F-026", "cat": "OFI", "iso": "7.1.5", "area": "모니터링·측정 자원(교정)", "text": "고객 만족도 조사 방법 다양화", "owner": "박지훈", "dept": "구매팀", "audit": "2026-10-12", "due": "2026-11-30", "state": "진행중", "prog": 80, "done": "", "left": 24, "status": "정상", "planned": 51, "stage": 4, "reason": "", "risk": "정상", "predue": false}, {"id": "F-027", "cat": "OFI", "iso": "6.1", "area": "리스크와 기회 대응", "text": "KPI 대시보드 자동화 검토", "owner": "최유진", "dept": "설계/R&D팀", "audit": "2026-10-12", "due": "2026-11-13", "state": "진행중", "prog": 80, "done": "", "left": 7, "status": "주의", "planned": 78, "stage": 4, "reason": "", "risk": "낮음", "predue": false}, {"id": "F-028", "cat": "OFI", "iso": "10.2", "area": "부적합 및 시정조치", "text": "문서 관리 시스템 전산화", "owner": "정현우", "dept": "인사/교육팀", "audit": "2026-10-12", "due": "2026-11-10", "state": "진행중", "prog": 80, "done": "", "left": 4, "status": "주의", "planned": 86, "stage": 4, "reason": "", "risk": "낮음", "predue": false}, {"id": "F-029", "cat": "OFI", "iso": "8.3", "area": "설계·개발", "text": "교육 체계 직무별 맵 구축", "owner": "한소라", "dept": "설비/보전팀", "audit": "2026-10-12", "due": "2026-12-19", "state": "진행중", "prog": 60, "done": "", "left": 43, "status": "정상", "planned": 37, "stage": 3, "reason": "", "risk": "정상", "predue": false}, {"id": "F-030", "cat": "OFI", "iso": "6.1", "area": "리스크와 기회 대응", "text": "공급자 평가 기준 정량화", "owner": "오태민", "dept": "물류/창고팀", "audit": "2026-10-12", "due": "2027-01-01", "state": "미착수", "prog": 0, "done": "", "left": 56, "status": "정상", "planned": 31, "stage": 0, "reason": "", "risk": "정상", "predue": false}, {"id": "F-031", "cat": "OFI", "iso": "7.1.5", "area": "모니터링·측정 자원(교정)", "text": "현장 5S 점검표 표준화", "owner": "윤지아", "dept": "영업/CS팀", "audit": "2026-10-12", "due": "2026-10-19", "state": "검증대기", "prog": 90, "done": "", "left": -18, "status": "지연", "planned": 100, "stage": 4, "reason": "기한 18일 초과 · 검증/종결 대기 중", "risk": "중간", "predue": false}, {"id": "F-032", "cat": "OFI", "iso": "6.1", "area": "리스크와 기회 대응", "text": "리스크 평가 매트릭스 고도화", "owner": "김민수", "dept": "품질관리팀", "audit": "2026-10-12", "due": "2026-10-14", "state": "완료", "prog": 100, "done": "2026-10-12", "left": null, "status": "완료", "planned": 100, "stage": 5, "reason": "", "risk": "종결", "predue": false}, {"id": "F-033", "cat": "OFI", "iso": "7.5", "area": "문서화된 정보", "text": "내부심사원 역량 강화 프로그램", "owner": "이서연", "dept": "생산팀", "audit": "2026-10-12", "due": "2026-10-25", "state": "검증대기", "prog": 90, "done": "", "left": -12, "status": "지연", "planned": 100, "stage": 4, "reason": "기한 12일 초과 · 검증/종결 대기 중", "risk": "중간", "predue": false}, {"id": "F-034", "cat": "OFI", "iso": "9.1", "area": "모니터링·측정·분석", "text": "불량 데이터 분석 도구 활용 확대", "owner": "박지훈", "dept": "구매팀", "audit": "2026-10-12", "due": "2027-01-18", "state": "진행중", "prog": 20, "done": "", "left": 73, "status": "정상", "planned": 26, "stage": 1, "reason": "", "risk": "정상", "predue": false}, {"id": "F-035", "cat": "OFI", "iso": "9.3", "area": "경영검토", "text": "설비 예방보전 주기 최적화", "owner": "최유진", "dept": "설계/R&D팀", "audit": "2026-10-12", "due": "2026-11-01", "state": "완료", "prog": 100, "done": "2026-10-29", "left": null, "status": "완료", "planned": 100, "stage": 5, "reason": "", "risk": "종결", "predue": false}, {"id": "F-036", "cat": "OFI", "iso": "9.1", "area": "모니터링·측정·분석", "text": "경영검토 회의 자료 표준화", "owner": "정현우", "dept": "인사/교육팀", "audit": "2026-10-12", "due": "2026-11-07", "state": "미착수", "prog": 0, "done": "", "left": 1, "status": "주의", "planned": 96, "stage": 0, "reason": "", "risk": "낮음", "predue": false}, {"id": "F-037", "cat": "OFI", "iso": "8.4", "area": "외부 공급자 관리", "text": "고객 피드백 수집 채널 통합", "owner": "한소라", "dept": "설비/보전팀", "audit": "2026-10-12", "due": "2026-10-14", "state": "진행중", "prog": 40, "done": "", "left": -23, "status": "지연", "planned": 100, "stage": 2, "reason": "기한 23일 초과 · 진행률 40% (단계 2/5), 잔여 60%p 미달", "risk": "중간", "predue": false}, {"id": "F-038", "cat": "OFI", "iso": "5.1", "area": "리더십과 의지", "text": "작업 표준서 시각화(사진·영상)", "owner": "오태민", "dept": "물류/창고팀", "audit": "2026-10-12", "due": "2026-10-31", "state": "진행중", "prog": 20, "done": "", "left": -6, "status": "지연", "planned": 100, "stage": 1, "reason": "기한 6일 초과 · 진행률 20% (단계 1/5), 잔여 80%p 미달", "risk": "중간", "predue": false}, {"id": "F-039", "cat": "OFI", "iso": "5.1", "area": "리더십과 의지", "text": "부적합 재발 방지 사례 공유회", "owner": "윤지아", "dept": "영업/CS팀", "audit": "2026-10-12", "due": "2026-10-11", "state": "완료", "prog": 100, "done": "2026-10-07", "left": null, "status": "완료", "planned": 100, "stage": 5, "reason": "", "risk": "종결", "predue": true}, {"id": "F-040", "cat": "OFI", "iso": "8.3", "area": "설계·개발", "text": "협력사 합동 품질 워크숍", "owner": "김민수", "dept": "품질관리팀", "audit": "2026-10-12", "due": "2026-10-18", "state": "검증대기", "prog": 90, "done": "", "left": -19, "status": "지연", "planned": 100, "stage": 4, "reason": "기한 19일 초과 · 검증/종결 대기 중", "risk": "중간", "predue": false}, {"id": "F-041", "cat": "OFI", "iso": "7.5", "area": "문서화된 정보", "text": "측정기 교정 관리 자동 알림", "owner": "이서연", "dept": "생산팀", "audit": "2026-10-12", "due": "2026-12-28", "state": "진행중", "prog": 80, "done": "", "left": 52, "status": "정상", "planned": 32, "stage": 4, "reason": "", "risk": "정상", "predue": false}, {"id": "F-042", "cat": "OFI", "iso": "8.4", "area": "외부 공급자 관리", "text": "신제품 설계 리뷰 체크리스트 개선", "owner": "박지훈", "dept": "구매팀", "audit": "2026-10-12", "due": "2026-10-27", "state": "미착수", "prog": 0, "done": "", "left": -10, "status": "지연", "planned": 100, "stage": 0, "reason": "기한 10일 초과 · 미착수(착수 지연)", "risk": "높음", "predue": false}, {"id": "F-043", "cat": "OFI", "iso": "9.2", "area": "내부심사", "text": "출하 포장 품질 개선", "owner": "최유진", "dept": "설계/R&D팀", "audit": "2026-10-12", "due": "2026-11-08", "state": "진행중", "prog": 60, "done": "", "left": 2, "status": "주의", "planned": 93, "stage": 3, "reason": "", "risk": "낮음", "predue": false}, {"id": "F-044", "cat": "OFI", "iso": "6.1", "area": "리스크와 기회 대응", "text": "창고 선입선출 관리 강화", "owner": "정현우", "dept": "인사/교육팀", "audit": "2026-10-12", "due": "2027-01-14", "state": "진행중", "prog": 20, "done": "", "left": 69, "status": "정상", "planned": 27, "stage": 1, "reason": "", "risk": "정상", "predue": false}, {"id": "F-045", "cat": "OFI", "iso": "9.2", "area": "내부심사", "text": "프로세스 맵 최신화", "owner": "한소라", "dept": "설비/보전팀", "audit": "2026-10-12", "due": "2026-11-11", "state": "진행중", "prog": 20, "done": "", "left": 5, "status": "주의", "planned": 83, "stage": 1, "reason": "", "risk": "낮음", "predue": false}, {"id": "F-046", "cat": "OFI", "iso": "10.2", "area": "부적합 및 시정조치", "text": "목표 설정 SMART 기준 도입", "owner": "오태민", "dept": "물류/창고팀", "audit": "2026-10-12", "due": "2026-12-22", "state": "진행중", "prog": 20, "done": "", "left": 46, "status": "정상", "planned": 35, "stage": 1, "reason": "", "risk": "정상", "predue": false}, {"id": "F-047", "cat": "OFI", "iso": "7.5", "area": "문서화된 정보", "text": "불만 처리 SLA 정의", "owner": "윤지아", "dept": "영업/CS팀", "audit": "2026-10-12", "due": "2026-12-17", "state": "진행중", "prog": 40, "done": "", "left": 41, "status": "정상", "planned": 38, "stage": 2, "reason": "", "risk": "정상", "predue": false}, {"id": "F-048", "cat": "OFI", "iso": "9.1", "area": "모니터링·측정·분석", "text": "변경 관리 절차 간소화", "owner": "김민수", "dept": "품질관리팀", "audit": "2026-10-12", "due": "2026-11-09", "state": "미착수", "prog": 0, "done": "", "left": 3, "status": "주의", "planned": 89, "stage": 0, "reason": "", "risk": "낮음", "predue": false}, {"id": "F-049", "cat": "OFI", "iso": "9.3", "area": "경영검토", "text": "교육 효과성 평가 양식 개선", "owner": "이서연", "dept": "생산팀", "audit": "2026-10-12", "due": "2026-10-27", "state": "완료", "prog": 100, "done": "2026-10-21", "left": null, "status": "완료", "planned": 100, "stage": 5, "reason": "", "risk": "종결", "predue": false}, {"id": "F-050", "cat": "OFI", "iso": "7.1.5", "area": "모니터링·측정 자원(교정)", "text": "VOC 분석 월간 리포트화", "owner": "박지훈", "dept": "구매팀", "audit": "2026-10-12", "due": "2026-11-12", "state": "진행중", "prog": 80, "done": "", "left": 6, "status": "주의", "planned": 81, "stage": 4, "reason": "", "risk": "낮음", "predue": false}];
+const M={"asof": "2026-11-06", "audit": "2026-10-12"};
+const $=id=>document.getElementById(id);
+const ST=["지연","주의","정상","완료"],RK=["높음","중간","낮음","정상","종결"];
+const COL={지연:"var(--bad)",주의:"var(--warn)",정상:"var(--norm)",완료:"var(--done)"};
+const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+const pct=n=>Math.round(n*10)/10;
+const cnt=(f)=>D.filter(f).length;
+const store={get(k){try{return localStorage.getItem("audit:"+k)||""}catch(e){return ""}},set(k,v){try{localStorage.setItem("audit:"+k,v)}catch(e){}}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+$("hd").textContent=`기준일 ${M.asof} · 고객 심사일 ${M.audit} · 총 ${D.length}건 (Major/Minor/OFI)`;
+
+/* ① summary */
+const N=D.length, all=pct(avg(D.map(d=>d.prog)));
+const nS={};ST.forEach(s=>nS[s]=cnt(d=>d.status==s));
+const nR={};RK.forEach(r=>nR[r]=cnt(d=>d.risk==r));
+const riskN=nR.높음+nR.중간+nR.낮음;
+const majOpen=cnt(d=>d.cat=="Major"&&d.status!="완료");
+const maxLate=Math.max(0,...D.filter(d=>d.status=="지연").map(d=>-d.left));
+const doneOnTime=cnt(d=>d.status=="완료"&&d.done<=d.due);
+const verdict=nS.지연>=N*0.2?"지연 우려 (적색)":nS.지연>0?"일부 지연 (황색)":"정상";
+$("summary").innerHTML=
+`<p>① 전체 진행율 <b>${all}%</b> — 완료 <b>${nS.완료}/${N}건(${pct(nS.완료/N*100)}%)</b>, 미완료 ${N-nS.완료}건. Major 미완료 ${majOpen}건.</p>
+ <p>② Risk 항목 <b>${riskN}건</b> (높음 <b>${nR.높음}</b> · 중간 ${nR.중간} · 낮음 ${nR.낮음}) — 기한 초과 ${nS.지연}건, 기한 임박(주의) ${nS.주의}건.</p>
+ <p>③ 납기 대비 상태: <span class="tag t-${nS.지연>0?"지연":"정상"}">${verdict}</span> 미완료 ${N-nS.완료}건 중 ${nS.지연}건이 기한 초과(최대 ${maxLate}일), 완료 ${nS.완료}건 중 기한 내 완료 ${doneOnTime}건.</p>`;
+
+/* ② cards */
+const cats=["Major","Minor","OFI"];
+function cardFor(c){
+  const L=D.filter(d=>d.cat==c), a=avg(L.map(d=>d.prog)), p=avg(L.map(d=>d.planned));
+  const rel=p?L.reduce((x,d)=>x+d.prog,0)/L.reduce((x,d)=>x+d.planned,0)*100:0;
+  const dn=L.filter(d=>d.status=="완료").length, late=L.filter(d=>d.status=="지연").length;
+  const cls=rel>=95?"정상":rel>=70?"주의":"지연";
+  return `<div class="card"><div class="lb"><span>${c} 전체 달성율 (${L.length}건)</span><span class="tag t-${cls}">${rel>=95?"계획 부합":rel>=70?"계획 미달":"크게 미달"}</span></div>
+  <div class="big">${pct(a)}<small>%</small></div>
+  <div class="bar"><i style="width:${a}%"></i><u style="left:${p}%"></u></div>
+  <div class="row"><span>계획 대비 달성율</span><b>${pct(rel)}%</b></div>
+  <div class="row"><span>계획 진행률 / 완료 / 지연</span><b>${pct(p)}% / ${dn} / ${late}</b></div></div>`;
+}
+const allPlan=D.reduce((x,d)=>x+d.planned,0), allRel=D.reduce((x,d)=>x+d.prog,0)/allPlan*100;
+$("cards").innerHTML=
+ `<div class="card"><div class="lb"><span>전체 (${N}건)</span></div><div class="big">${all}<small>%</small></div>
+  <div class="bar"><i style="width:${all}%"></i><u style="left:${avg(D.map(d=>d.planned))}%"></u></div>
+  <div class="row"><span>계획 대비 달성율</span><b>${pct(allRel)}%</b></div>
+  <div class="row"><span>계획 진행률 / 완료 / 지연</span><b>${pct(avg(D.map(d=>d.planned)))}% / ${nS.완료} / ${nS.지연}</b></div></div>`
+ + cats.map(cardFor).join("");
+
+/* ③ charts */
+$("lg1").innerHTML=ST.map(s=>`<span style="--c:${COL[s]}">${s} ${nS[s]}</span>`).join("")+`<span style="--c:#c0392b;border-radius:0">│ 계획 진행률</span>`;
+(function(){
+  const W=1000,H=300,L=34,B=44,T=10,bw=(W-L-6)/N;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="항목별 진행율 막대차트">`;
+  for(let v=0;v<=100;v+=20){const y=T+(H-T-B)*(1-v/100);
+    s+=`<line x1="${L}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${L-5}" y="${y+3}" text-anchor="end">${v}%</text>`;}
+  D.forEach((d,i)=>{
+    const x=L+i*bw+1,h=(H-T-B)*d.prog/100,y=H-B-h,ph=(H-T-B)*d.planned/100;
+    s+=`<g><title>${d.id} ${esc(d.text)}\n${d.cat} · ${d.owner} · ${d.status}\n진행률 ${d.prog}% / 계획 ${d.planned}%</title>
+    <rect x="${x}" y="${y}" width="${bw-2}" height="${Math.max(h,d.prog?1:0)}" rx="1.5" fill="${COL[d.status]}"/>
+    <rect x="${x-1}" y="${H-B-ph-1}" width="${bw}" height="2" fill="#c0392b" opacity=".75"/>
+    ${d.prog==0?`<rect x="${x}" y="${H-B-2}" width="${bw-2}" height="2" fill="${COL[d.status]}"/>`:""}
+    <text transform="translate(${x+bw/2-1},${H-B+8}) rotate(-90)" text-anchor="end" font-size="8.5">${d.id.slice(2)}</text></g>`;
+  });
+  [["Major",0,5],["Minor",5,25],["OFI",25,50]].forEach(([n,a,b])=>{
+    const x1=L+a*bw,x2=L+b*bw;
+    s+=`<line x1="${x1+2}" x2="${x2-2}" y1="${H-8}" y2="${H-8}" stroke="var(--mute)"/><text x="${(x1+x2)/2}" y="${H-0}" text-anchor="middle" style="font-size:11px">${n}</text>`;
+    if(a)s+=`<line x1="${x1}" x2="${x1}" y1="${T}" y2="${H-B}" stroke="var(--line)" stroke-dasharray="3 3"/>`;
+  });
+  $("ch1").innerHTML=s+"</svg>";
+})();
+const RC={높음:"var(--bad)",중간:"var(--warn)",낮음:"var(--norm)",정상:"var(--ok)",종결:"var(--done)"};
+$("lg2").innerHTML=cats.map((c,i)=>`<span style="--c:${["#1f3a5f","#5b8fc9","#a9c4e4"][i]}">${c}</span>`).join("");
+(function(){
+  const CC=["#1f3a5f","#5b8fc9","#a9c4e4"];const max=Math.max(...RK.map(r=>nR[r]));
+  let s=`<svg viewBox="0 0 340 ${RK.length*46+6}" width="100%" role="img" aria-label="Risk 등급 분포">`;
+  RK.forEach((r,i)=>{
+    const y=i*46+4;let x=62;
+    s+=`<text x="0" y="${y+20}" style="font-size:12px;fill:var(--ink)">${r}</text>`;
+    cats.forEach((c,j)=>{const k=cnt(d=>d.risk==r&&d.cat==c),w=k/max*230;
+      if(k){s+=`<rect x="${x}" y="${y+4}" width="${w}" height="26" fill="${CC[j]}"><title>${r} · ${c} ${k}건</title></rect>`;
+        if(w>16)s+=`<text x="${x+w/2}" y="${y+21}" text-anchor="middle" style="font-size:11px;fill:${j==2?"#1c2430":"#fff"}">${k}</text>`;x+=w;}});
+    s+=`<text x="${x+6}" y="${y+22}" style="font-size:13px;font-weight:700;fill:${RC[r]}">${nR[r]}건</text>`;
+  });
+  $("ch2").innerHTML=s+"</svg>";
+})();
+$("riskdef").innerHTML="Risk 등급 기준: <b>높음</b> = 기한 초과 Major, 또는 기한 초과+미착수 · <b>중간</b> = 그 외 기한 초과, 또는 기한 임박 Major · <b>낮음</b> = 기한 임박 Minor/OFI · 정상 = 기한 여유 · 종결 = 완료. (Risk 항목 = 높음+중간+낮음)";
+
+/* ④ table */
+let flt="전체";
+function dots(n){return `<span class="dots"><b>${"●".repeat(n)}</b><span>${"○".repeat(5-n)}</span></span> ${n}/5`}
+function renderTable(){
+  const L=D.filter(d=>flt=="전체"||d.status==flt||d.cat==flt||(flt=="Risk"&&["높음","중간","낮음"].includes(d.risk)));
+  $("tb").innerHTML=L.map(d=>{
+    const saved=store.get("reason:"+d.id);
+    const dn=d.left==null?"-":(d.left<0?`D+${-d.left}`:`D-${d.left}`);
+    const rs=d.status=="지연"?`<div class="auto">${esc(d.reason)}</div><input type="text" data-id="${d.id}" placeholder="실제 지연 사유 입력" value="${esc(saved)}" aria-label="${d.id} 지연 사유">`
+      :d.status=="주의"?`<span class="auto">기한 ${dn} (주의 기준 이내) · 진행률 ${d.prog}%</span>`:"-";
+    return `<tr><td>${d.id}</td><td>${d.cat}</td><td>${esc(d.text)}<div class="auto">ISO ${d.iso} · ${esc(d.area)}</div></td><td>${d.owner}<div class="auto">${esc(d.dept)}</div></td>
+    <td>${d.due}${d.predue?'<div class="auto" title="조치기한이 심사일보다 앞섬">⚠ 기한&lt;심사일</div>':""}</td><td class="num">${dn}</td>
+    <td><span class="tag t-${d.status}">${d.status}</span><div class="auto">${d.state}</div></td>
+    <td class="num">${d.prog}%</td><td>${dots(d.stage)}</td><td><span class="tag t-${d.risk}">${d.risk}</span></td><td class="reason">${rs}</td></tr>`}).join("");
+  document.querySelectorAll(".reason input").forEach(i=>i.addEventListener("input",()=>store.set("reason:"+i.dataset.id,i.value)));
+}
+const FL=["전체","지연","주의","정상","완료","Risk","Major","Minor","OFI"];
+function renderFilters(){
+  $("flt").innerHTML=FL.map(f=>`<button class="${f==flt?"on":""}" data-f="${f}">${f==="Risk"?"Risk 항목":f} (${f=="전체"?N:f=="Risk"?riskN:cnt(d=>d.status==f||d.cat==f)})</button>`).join("");
+  $("flt").querySelectorAll("button").forEach(b=>b.onclick=()=>{flt=b.dataset.f;renderFilters();renderTable()});
+}
+renderFilters();renderTable();
+
+/* ⑤ recommendations */
+const sorted=D.filter(d=>d.status=="지연").sort((a,b)=>(a.cat=="Major"?0:1)-(b.cat=="Major"?0:1)||a.left-b.left);
+const lateMajor=sorted.filter(d=>d.cat=="Major");
+const notStarted=D.filter(d=>d.status=="지연"&&d.prog==0);
+const warnMajor=D.filter(d=>d.status=="주의"&&d.cat=="Major");
+const verif=D.filter(d=>d.state=="검증대기");
+const recs=[];
+if(lateMajor.length)recs.push(`<b>[즉시] Major 기한 초과 ${lateMajor.length}건</b> (${lateMajor.map(d=>d.id+" "+d.owner).join(", ")}) — 경영층 보고 및 주 1회 점검, 기한 재설정 시 심사 대응 근거 확보.`);
+if(notStarted.length)recs.push(`<b>[이번 주] 기한 초과 + 미착수 ${notStarted.length}건</b> (${notStarted.map(d=>d.id).join(", ")}) — 착수 지연 원인 확인, 담당자 지정·자원 재배정 후 계획서 제출.`);
+const lateOther=sorted.filter(d=>d.cat!="Major"&&d.prog>0);
+if(lateOther.length)recs.push(`<b>[이번 주] 기한 초과 진행중 ${lateOther.length}건</b> (${lateOther.map(d=>d.id).join(", ")}) — 잔여 작업 범위와 완료 예정일을 확정하고 변경 기한 승인.`);
+if(warnMajor.length)recs.push(`<b>[주의] 기한 임박 Major ${warnMajor.length}건</b> (${warnMajor.map(d=>d.id+" D-"+d.left).join(", ")}) — 진행률 ${warnMajor.map(d=>d.prog+"%").join("/")}로 기한 내 종결 곤란, 증빙 우선 확보.`);
+const warnO=D.filter(d=>d.status=="주의"&&d.cat!="Major");
+if(warnO.length)recs.push(`<b>[주의] 기한 7일 이내 Minor/OFI ${warnO.length}건</b> (${warnO.map(d=>d.id).join(", ")}) — 완료 예정일 확인 및 필요 시 사전 기한 조정.`);
+if(verif.length)recs.push(`<b>[종결] 검증대기 ${verif.length}건</b> (${verif.map(d=>d.id).join(", ")}) — 효과성 검증을 마쳐 완료(100%) 처리하면 달성율 즉시 개선.`);
+const pre=D.filter(d=>d.predue);
+if(pre.length)recs.push(`<b>[데이터 점검] 조치기한이 심사일보다 앞선 항목 ${pre.length}건</b> (${pre.map(d=>d.id).join(", ")}) — 기한 입력 오류 여부 확인.`);
+$("rec").innerHTML=recs.map(r=>`<li>${r}</li>`).join("");
+
+const owners=[...new Set(D.map(d=>d.owner))];
+$("ob").innerHTML=owners.map(o=>{
+  const L=D.filter(d=>d.owner==o), late=L.filter(d=>d.status=="지연"), w=L.filter(d=>d.status=="주의");
+  const tg=[...late,...w].map(d=>`<span class="tag t-${d.status}" title="${esc(d.text)}">${d.id}</span>`).join(" ")||'<span class="auto">없음</span>';
+  const k=encodeURIComponent(o);
+  return `<tr><td>${o}</td><td>${esc(L[0].dept)}</td><td class="num">${late.length}</td><td class="num">${w.length}</td><td>${tg}</td>
+  <td><input type="checkbox" data-k="chk:${k}" ${store.get("chk:"+k)=="1"?"checked":""} aria-label="${o} 확인"></td>
+  <td><input type="date" data-k="dt:${k}" value="${store.get("dt:"+k)}"></td>
+  <td class="sig"><input type="text" data-k="memo:${k}" value="${esc(store.get("memo:"+k))}" placeholder="의견/서명"></td></tr>`}).join("");
+document.querySelectorAll("#ob input").forEach(i=>i.addEventListener("input",()=>store.set(i.dataset.k,i.type=="checkbox"?(i.checked?"1":"0"):i.value)));
+</script>
+</body>
+</html>
